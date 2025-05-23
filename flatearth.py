@@ -312,8 +312,7 @@ class DateTimePlotApp(QWidget):
 
     def show_preferences(self):
         dlg = PreferencesDialog(self)
-        if dlg.exec_():
-            # Optionally update timer with new value
+     
 
 
     def update_plot(self):
