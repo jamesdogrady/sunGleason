@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDateEdit, QTimeEdit, QPushButton,QDialog,QLineEdit,QDialogButtonBox
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDateEdit, QTimeEdit, QPushButton,QDialog,QLineEdit,QDialogButtonBox,QMessageBox
 )
 from PyQt5.QtCore import QDate, QTime, QDateTime,QTimeZone,QSettings
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -210,6 +210,7 @@ class PreferencesDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Preferences")
+        print("HERE");
         
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("How far between Latitude lines to Plot:"))
@@ -245,16 +246,59 @@ class PreferencesDialog(QDialog):
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         layout.addWidget(buttonBox)
+        print("DONE");
     
     def accept(self):
         # Save value
         settings = QSettings("MyCompany", "MyApp")
-        settings.setValue("lat_deg", self.lat_degrees.text())
-        settings.setValue("long_deg", self.long_degrees.text())
-        settings.setValue("point_size", self.point_size.text())
-        settings.setValue("alpha", self.alpha.text())
-        settings.setValue("proj_lat", self.proj_lat.text())
-        settings.setValue("proj_long", self.proj_long.text())
+        # values here must be floats and must be within a set value.  We need to check each one so
+        # we can set what we can.
+        print("HERE");
+        settings.setValue("Error", "");
+        settings.remove("Error");
+        try :
+            lat_val=float(self.lat_degrees.text());
+            settings.setValue("lat_deg", self.lat_degrees.text())
+        except ValueError:
+            print("lat val",self.lat_degrees.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
+
+        try :
+            long_val=float(self.long_degrees.text());
+            settings.setValue("long_deg", self.long_degrees.text())
+        except ValueError:
+            print("long val",self.lat_degrees.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
+
+        try :
+            point_size=float(self.point_size.text());
+            settings.setValue("point_size", self.point_size.text())
+        except ValueError:
+            print("point_size ",self.point_size.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
+
+        try :
+            alpha=float(self.alpha.text());
+            settings.setValue("alpha", self.alpha.text())
+        except ValueError:
+            print("alpha",self.alpha.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
+
+        try :
+            proj_lat=float(self.proj_lat.text());
+            if (proj_lat >= -90 and proj_lat <=90 ) :
+                settings.setValue("proj_lat", self.proj_lat.text())
+        except ValueError:
+            print("proj_lat",self.proj_lat.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
+
+        try :
+            proj_long=float(self.proj_long.text());
+            if (proj_long >= -180 and proj_long <=180 ) :
+                settings.setValue("proj_long", self.proj_long.text())
+        except ValueError:
+            print("proj_long",self.proj_long.text()," is not floating point.  Ignored");
+            settings.setValue("Error","value is not a float");
         super().accept()
 
 class DateTimePlotApp(QWidget):
@@ -312,7 +356,17 @@ class DateTimePlotApp(QWidget):
 
     def show_preferences(self):
         dlg = PreferencesDialog(self)
-     
+        # updates are made to settings
+        # it would be better to make a note here is values are invalid.  We just ignore it now.
+        dlg.exec_()
+        # check for errors.
+        settings = QSettings("MyCompany", "MyApp")
+        err=settings.value("Error");
+        if err != "" :
+            dlg2 = QMessageBox(self)
+            dlg2.setWindowTitle("Error ");
+            dlg2.setText("Non float values in prefereces are ignored");
+            dlg2.exec()
 
 
     def update_plot(self):
@@ -379,6 +433,7 @@ if __name__ == "__main__":
     settings.setValue("alpha", ".01");
     settings.setValue("proj_long", "0");
     settings.setValue("proj_lat", "90");
+    settings.setValue("Error", "");
     app = QApplication(sys.argv)
     window = DateTimePlotApp()
     window.show()
