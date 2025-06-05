@@ -9,6 +9,7 @@ from matplotlib.backends.backend_qtagg import \
 from matplotlib.figure import Figure
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from matplotlib.ticker import FuncFormatter
 import matplotlib.colors as mcolors
 #import geopandas as gpd
@@ -26,6 +27,7 @@ from astral import Observer
 from astral.sun import sunrise,sunset
 from astral.sun import zenith
 from enum import Enum
+from datetime import timedelta
 utc=pytz.UTC
 
 # python script to visualize daylight on a projection of the globe earth imagined to be a flat earth map.
@@ -210,7 +212,6 @@ class PreferencesDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Preferences")
-        print("HERE");
         
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("How far between Latitude lines to Plot:"))
@@ -246,42 +247,35 @@ class PreferencesDialog(QDialog):
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         layout.addWidget(buttonBox)
-        print("DONE");
     
     def accept(self):
         # Save value
         settings = QSettings("MyCompany", "MyApp")
         # values here must be floats and must be within a set value.  We need to check each one so
         # we can set what we can.
-        print("HERE");
         settings.setValue("Error", "");
-        settings.remove("Error");
         try :
             lat_val=float(self.lat_degrees.text());
             settings.setValue("lat_deg", self.lat_degrees.text())
         except ValueError:
-            print("lat val",self.lat_degrees.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
 
         try :
             long_val=float(self.long_degrees.text());
             settings.setValue("long_deg", self.long_degrees.text())
         except ValueError:
-            print("long val",self.lat_degrees.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
 
         try :
             point_size=float(self.point_size.text());
             settings.setValue("point_size", self.point_size.text())
         except ValueError:
-            print("point_size ",self.point_size.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
 
         try :
             alpha=float(self.alpha.text());
             settings.setValue("alpha", self.alpha.text())
         except ValueError:
-            print("alpha",self.alpha.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
 
         try :
@@ -289,7 +283,6 @@ class PreferencesDialog(QDialog):
             if (proj_lat >= -90 and proj_lat <=90 ) :
                 settings.setValue("proj_lat", self.proj_lat.text())
         except ValueError:
-            print("proj_lat",self.proj_lat.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
 
         try :
@@ -297,7 +290,6 @@ class PreferencesDialog(QDialog):
             if (proj_long >= -180 and proj_long <=180 ) :
                 settings.setValue("proj_long", self.proj_long.text())
         except ValueError:
-            print("proj_long",self.proj_long.text()," is not floating point.  Ignored");
             settings.setValue("Error","value is not a float");
         super().accept()
 
@@ -332,6 +324,7 @@ class DateTimePlotApp(QWidget):
         self.label = QLabel("Selected datetime:")
 
         self.proj = ccrs.AzimuthalEquidistant(central_latitude=90, central_longitude=0)
+        #self.proj = ccrs.Orthographic(central_latitude=90, central_longitude=0)
         self.last_run = LastRunPrefs();
 
         input_layout.addWidget(QLabel("Date:"))
@@ -362,7 +355,7 @@ class DateTimePlotApp(QWidget):
         # check for errors.
         settings = QSettings("MyCompany", "MyApp")
         err=settings.value("Error");
-        if err != "" :
+        if len(err) >   0:
             dlg2 = QMessageBox(self)
             dlg2.setWindowTitle("Error ");
             dlg2.setText("Non float values in prefereces are ignored");
@@ -388,15 +381,18 @@ class DateTimePlotApp(QWidget):
         point_alpha= settings.value("alpha", 10, type=float)
         proj_lat= settings.value("proj_lat", 10, type=float)
         proj_long= settings.value("proj_long", 10, type=float)
+        #plt.text(0.5, 0.01, "imitatingai.com.", ha='center', fontsize=10, color='gray')
 
         db_str = os.environ.get("DEBUG","0");
         debug=int(db_str);
         self.proj = ccrs.AzimuthalEquidistant(central_latitude=proj_lat, central_longitude=proj_long)
+        #self.proj = ccrs.Orthographic(central_latitude=proj_lat, central_longitude=proj_long)
         self.ax = plt.axes(projection=self.proj)
         #self.figure, self.ax = plt.subplots(1,1,subplot_kw={'projection':self.proj})
         self.ax.set_global()
         self.ax.coastlines()
         self.ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
+        self.ax.set_title(dt.strftime("%B"));
 
         # 3. Optional: Add countries
         self.ax.add_feature(cfeature.BORDERS, linewidth=0.5)
@@ -421,6 +417,10 @@ class DateTimePlotApp(QWidget):
                     print(p.to_string());
         if debug > 0 :
             print("Noon point",self.worldData.noon_point);
+
+        lon_min, lon_max, lat_min, lat_max = self.ax.get_extent()
+
+        self.ax.text( (lat_max-lat_min)/2,lon_min-30, "imitatingai.com", ha='left', fontsize=12,transform=self.proj)
         self.canvas.draw()
         plt.savefig(os.getcwd()+'/map_'+suf +'.jpg',dpi=400, bbox_inches="tight")
 
@@ -431,11 +431,10 @@ if __name__ == "__main__":
     settings.setValue("long_deg", "1")
     settings.setValue("point_size","1")
     settings.setValue("alpha", ".01");
-    settings.setValue("proj_long", "0");
+    settings.setValue("proj_long", "-90");
     settings.setValue("proj_lat", "90");
     settings.setValue("Error", "");
     app = QApplication(sys.argv)
     window = DateTimePlotApp()
     window.show()
     sys.exit(app.exec_())
-
