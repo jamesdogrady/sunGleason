@@ -99,7 +99,7 @@ class LastRunPrefs :
             if self.date_time != date_time :
                 changed=True;
         self.date_time=date_time;
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         lat_deg= settings.value("lat_deg", 10, type=float)
         long_deg = settings.value("long_deg", 10, type=float)
         if self.lat_incr != lat_deg or self.long_incr != long_deg :
@@ -124,7 +124,7 @@ class WorldSunData :
     def mk_point_list(self) :
         self.point_list=[];
         # potentially reduce density at 80N.
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         lat_incr= settings.value("lat_deg", 10, type=int)
         long_incr = settings.value("long_deg", 10, type=int)
         # note that we have a lot of points at the north pole because the project gets very dense.  This
@@ -234,7 +234,7 @@ class PreferencesDialog(QDialog):
         layout.addWidget(self.proj_long)
 
         # Load saved value
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         self.alpha.setText( settings.value("alpha", 10, type=str))
         self.lat_degrees.setText( settings.value("lat_deg", 10, type=str))
         self.long_degrees.setText( settings.value("long_deg", 10, type=str))
@@ -250,7 +250,7 @@ class PreferencesDialog(QDialog):
     
     def accept(self):
         # Save value
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         # values here must be floats and must be within a set value.  We need to check each one so
         # we can set what we can.
         settings.setValue("Error", "");
@@ -353,7 +353,7 @@ class DateTimePlotApp(QWidget):
         # it would be better to make a note here is values are invalid.  We just ignore it now.
         dlg.exec_()
         # check for errors.
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         err=settings.value("Error");
         if len(err) >   0:
             dlg2 = QMessageBox(self)
@@ -376,7 +376,7 @@ class DateTimePlotApp(QWidget):
     # this is separated just to allow for drawing multiple pictures.  This is not implemented.
     def show_map(self,dt,suf) :
         self.figure.clear()
-        settings = QSettings("MyCompany", "MyApp")
+        settings = QSettings("imitatingai", "gleasonMap")
         marker_size= settings.value("point_size", 10, type=int)
         point_alpha= settings.value("alpha", 10, type=float)
         proj_lat= settings.value("proj_lat", 10, type=float)
@@ -392,7 +392,7 @@ class DateTimePlotApp(QWidget):
         self.ax.set_global()
         self.ax.coastlines()
         self.ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
-        self.ax.set_title(dt.strftime("%B"));
+        self.ax.set_title(dt.strftime("%m/%d/%Y %H:%M" + " UTC"));
 
         # 3. Optional: Add countries
         self.ax.add_feature(cfeature.BORDERS, linewidth=0.5)
@@ -420,13 +420,12 @@ class DateTimePlotApp(QWidget):
 
         lon_min, lon_max, lat_min, lat_max = self.ax.get_extent()
 
-        self.ax.text( (lat_max-lat_min)/2,lon_min-30, "imitatingai.com", ha='left', fontsize=12,transform=self.proj)
         self.canvas.draw()
         plt.savefig(os.getcwd()+'/map_'+suf +'.jpg',dpi=400, bbox_inches="tight")
 
 if __name__ == "__main__":
     # initialize default values.
-    settings = QSettings("MyCompany", "MyApp")
+    settings = QSettings("imitatingai", "gleasonMap")
     settings.setValue("lat_deg", "1");
     settings.setValue("long_deg", "1")
     settings.setValue("point_size","1")
@@ -438,3 +437,4 @@ if __name__ == "__main__":
     window = DateTimePlotApp()
     window.show()
     sys.exit(app.exec_())
+
