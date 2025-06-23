@@ -28,6 +28,7 @@ from astral.sun import sunrise,sunset
 from astral.sun import zenith
 from enum import Enum
 from datetime import timedelta
+import time
 utc=pytz.UTC
 
 # python script to visualize daylight on a projection of the globe earth imagined to be a flat earth map.
@@ -90,7 +91,7 @@ class LastRunPrefs :
 
 # we can use the cache if the date doesn't change and the increment for lat/long is not changed.
 # techincally, if just the increments changed, we could re-use some of the cache, but I'm not sure it's
-# worth it.
+# worth it. It's not the calculations that take time, it's the plotting.
     def set_data(self,date_time) :
         changed=False;
         if self.date_time == None :
@@ -103,7 +104,7 @@ class LastRunPrefs :
         lat_deg= settings.value("lat_deg", 10, type=float)
         long_deg = settings.value("long_deg", 10, type=float)
         if self.lat_incr != lat_deg or self.long_incr != long_deg :
-            change=d=True;
+            changed=True;
         self.lat_incr=lat_deg
         self.long_incr=long_deg
         return changed
@@ -199,7 +200,7 @@ class WorldSunData :
                 p.set_data(SunDataType.DAY,rise_time,set_time);
                 return True
             else :
-                # sun hasn't written or hasn't set
+                # the sun hasn't risen or has already set
                 p.set_data(SunDataType.NIGHT,rise_time,set_time);
                 return False 
         except ValueError as e:
@@ -381,7 +382,7 @@ class DateTimePlotApp(QWidget):
         point_alpha= settings.value("alpha", 10, type=float)
         proj_lat= settings.value("proj_lat", 10, type=float)
         proj_long= settings.value("proj_long", 10, type=float)
-        #plt.text(0.5, 0.01, "imitatingai.com.", ha='center', fontsize=10, color='gray')
+      
 
         db_str = os.environ.get("DEBUG","0");
         debug=int(db_str);
@@ -400,6 +401,7 @@ class DateTimePlotApp(QWidget):
         self.ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
 
         changed=self.last_run.set_data(dt ) 
+        start = time.time();
         if changed :
             self.worldData.noon_point=None
             self.worldData.lowest_zenith = 90
@@ -421,6 +423,9 @@ class DateTimePlotApp(QWidget):
         lon_min, lon_max, lat_min, lat_max = self.ax.get_extent()
 
         self.canvas.draw()
+        end = time.time();
+        if ( debug ) :
+            print("Plotting took :",end  - start);
         plt.savefig(os.getcwd()+'/map_'+suf +'.jpg',dpi=400, bbox_inches="tight")
 
 if __name__ == "__main__":
